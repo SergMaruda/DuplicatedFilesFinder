@@ -28,13 +28,45 @@ namespace DuplicatesFinder
         public void StartExecution(string i_directory)
         {
             m_dir_for_processing = i_directory;
-            m_thread = new Thread(FindDuplicatedGroups);
-            m_thread.Start();
+            m_processing_thread = new Thread(FindDuplicatedGroups);
+            m_processing_thread.Start();
             InitUIUpdates();
         }
 
+
         //--------------------------------------------------------------------------------------------
-        public void InitUIUpdates()
+        public void TerminateExecution()
+        {
+            if (m_processing_thread != null && m_processing_thread.IsAlive)
+            {
+                m_thread_started = false;
+                m_processing_thread.Join();
+            }
+        }
+
+        public bool IsRunning()
+        {
+            return m_processing_thread != null && m_processing_thread.IsAlive;
+        }
+
+
+        private List<string> getFiles()
+        {
+            List<string> res = null;
+
+            lock (m_mutex)
+            {
+                if (m_duplicated_gorups.Count > 0)
+                {
+                    res = m_duplicated_gorups[m_duplicated_gorups.Count - 1];
+                    m_duplicated_gorups.RemoveAt(m_duplicated_gorups.Count - 1);
+                }
+            }
+            return res;
+        }
+
+        //--------------------------------------------------------------------------------------------
+        private void InitUIUpdates()
         {
             var timer = new System.Windows.Forms.Timer { Interval = 100 };
             timer.Tick += delegate
@@ -43,13 +75,13 @@ namespace DuplicatesFinder
                 while ((res = getFiles()) != null)
                 {
                     OnDuplocatedGroupFound(res);
-                    if (thread_started == true)
+                    if (m_thread_started == true)
                         break;
                 }
 
                 if (!IsRunning())
                 {
-                    thread_started = true;
+                    m_thread_started = true;
                     timer.Stop();
                     if (OnProcessingFinished != null)
                         OnProcessingFinished();
@@ -61,48 +93,14 @@ namespace DuplicatesFinder
 
 
         //--------------------------------------------------------------------------------------------
-        public void TerminateExecution()
+        private Dictionary<string, List<string>> FindDuplicated(List<string> i_input_files)
         {
-            if (m_thread != null && m_thread.IsAlive)
+            var duplicated_files_groups = new Dictionary<string, List<string>>();
+            var inp_files_set = new HashSet<string>(i_input_files);
+
+            foreach (var file_path in i_input_files)
             {
-                thread_started = false;
-                m_thread.Join();
-            }
-        }
-
-        public bool IsRunning()
-        {
-            return m_thread != null && m_thread.IsAlive;
-        }
-
-
-        private List<string> getFiles()
-        {
-            List<string> res = null;
-
-            lock (sync)
-            {
-                if (duplicated_gorupds.Count > 0)
-                {
-                    res = duplicated_gorupds[duplicated_gorupds.Count - 1];
-                    duplicated_gorupds.RemoveAt(duplicated_gorupds.Count - 1);
-                }
-            }
-            return res;
-        }
-
-
-        //--------------------------------------------------------------------------------------------
-        Dictionary<string, List<string>> FindDuplicated(List<string> input_files)
-        {
-            var res = new HashSet<string>();
-            var id_path = new Dictionary<string, List<string>>();
-
-            var inp_files_set = new HashSet<string>(input_files);
-
-            foreach (var file_path in input_files)
-            {
-                if (thread_started == false)
+                if (m_thread_started == false)
                     break;
 
                 byte[] hash;
@@ -124,7 +122,7 @@ namespace DuplicatesFinder
                 }
                 var hash_str = sb.ToString();
                 List<string> str;
-                if (id_path.TryGetValue(hash_str, out str))
+                if (duplicated_files_groups.TryGetValue(hash_str, out str))
                 {
                     str.Add(file_path);
                 }
@@ -132,20 +130,20 @@ namespace DuplicatesFinder
                 {
                     str = new List<string>();
                     str.Add(file_path);
-                    id_path.Add(hash_str, str);
+                    duplicated_files_groups.Add(hash_str, str);
                 }
             }
-            return id_path;
+            return duplicated_files_groups;
         }
 
         //--------------------------------------------------------------------------------------------
         private void FindDuplicatedGroups()
         {
-            thread_started = true;
-            files_by_sizes.Clear();
+            m_thread_started = true;
+            m_files__grouped_by_sizes.Clear();
             ScanDirectory(m_dir_for_processing);
 
-            foreach (var entry in files_by_sizes.Reverse())
+            foreach (var entry in m_files__grouped_by_sizes.Reverse())
             {
                 if (entry.Value.Count > 1)
                 {
@@ -155,32 +153,32 @@ namespace DuplicatesFinder
                     {
                         if (entry2.Value.Count > 1)
                         {
-                            lock (sync)
+                            lock (m_mutex)
                             {
-                                duplicated_gorupds.Add(entry2.Value);
+                                m_duplicated_gorups.Add(entry2.Value);
                             }
                         }
                     }
                 }
             }
-            thread_started = false;
+            m_thread_started = false;
         }
 
         //--------------------------------------------------------------------------------------------
-        void ScanDirectory(string sDir)
+        void ScanDirectory(string i_directory)
         {
             try
             {
-                var files = Directory.GetFiles(sDir, "*.*");
+                var files = Directory.GetFiles(i_directory, "*.*");
                 foreach (string f in files)
                 {
-                    if (thread_started == false)
+                    if (m_thread_started == false)
                         break;
 
                     var finfo = new FileInfo(f);
 
                     List<string> list = null;
-                    if (files_by_sizes.TryGetValue(finfo.Length, out list))
+                    if (m_files__grouped_by_sizes.TryGetValue(finfo.Length, out list))
                     {
                         list.Add(f);
                     }
@@ -188,7 +186,7 @@ namespace DuplicatesFinder
                     {
                         list = new List<string>();
                         list.Add(f);
-                        files_by_sizes.Add(finfo.Length, list);
+                        m_files__grouped_by_sizes.Add(finfo.Length, list);
                     }
                 }
 
@@ -199,7 +197,7 @@ namespace DuplicatesFinder
 
             try
             {
-                var dirs = Directory.GetDirectories(sDir);
+                var dirs = Directory.GetDirectories(i_directory);
                 foreach (string d in dirs)
                 {
                     ScanDirectory(d);
@@ -213,14 +211,13 @@ namespace DuplicatesFinder
 
         }
 
-
+        //--------------------------------------------------------------------------------------------
         private DuplicatedGroupFoundDelegate OnDuplocatedGroupFound = null;
-
-        private Object sync = new Object();
-        private Thread m_thread = null;
-        private List<List<string>> duplicated_gorupds = new List<List<string>>();
-        private SortedDictionary<long, List<string>> files_by_sizes = new SortedDictionary<long, List<string>>();
-        private volatile bool thread_started = false;
+        private Object m_mutex = new Object();
+        private Thread m_processing_thread = null;
+        private List<List<string>> m_duplicated_gorups = new List<List<string>>();
+        private SortedDictionary<long, List<string>> m_files__grouped_by_sizes = new SortedDictionary<long, List<string>>();
+        private volatile bool m_thread_started = false;
         private string m_dir_for_processing;
 
     }
