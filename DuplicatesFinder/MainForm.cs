@@ -29,8 +29,6 @@ namespace DuplicatesFinder
         }
 
         //--------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------
         private void addDuplicatedGroup(List<string> duplicated_group)
         {
             long duplicatedSizeInBytes = -1;
@@ -58,7 +56,7 @@ namespace DuplicatesFinder
         }
 
         //--------------------------------------------------------------------------------------------
-        private void labelDirectory_Click_2(object sender, EventArgs e)
+        private void OnSelectDirectory(object sender, EventArgs e)
         {
             FolderBrowserDialog fbd = new FolderBrowserDialog();
             DialogResult result = fbd.ShowDialog();
@@ -70,7 +68,7 @@ namespace DuplicatesFinder
         }
 
         //--------------------------------------------------------------------------------------------
-        private void button1_Click(object sender, EventArgs e)
+        private void ButtonRunClicked(object sender, EventArgs e)
         {
             DialogResult answer = DialogResult.None;
 
@@ -100,7 +98,7 @@ namespace DuplicatesFinder
         }
 
         //--------------------------------------------------------------------------------------------
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        private void MainFormClosing(object sender, FormClosingEventArgs e)
         {
             duplicated_files_finder.TerminateExecution();
         }

@@ -48,7 +48,7 @@
             this.labelDirectory.Size = new System.Drawing.Size(100, 15);
             this.labelDirectory.TabIndex = 13;
             this.labelDirectory.Text = "<Choose directory>";
-            this.labelDirectory.Click += new System.EventHandler(this.labelDirectory_Click_2);
+            this.labelDirectory.Click += new System.EventHandler(this.OnSelectDirectory);
             // 
             // button1
             // 
@@ -59,7 +59,7 @@
             this.button1.TabIndex = 12;
             this.button1.Text = "Run";
             this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.button1.Click += new System.EventHandler(this.ButtonRunClicked);
             // 
             // label1
             // 
@@ -135,7 +135,7 @@
             this.Controls.Add(this.button1);
             this.Name = "MainForm";
             this.Text = "Duplicated Files Finder";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainFormClosing);
             this.ResumeLayout(false);
             this.PerformLayout();
 
