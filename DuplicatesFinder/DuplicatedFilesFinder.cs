@@ -44,25 +44,27 @@ namespace DuplicatesFinder
             }
         }
 
+        //--------------------------------------------------------------------------------------------
         public bool IsRunning()
         {
             return m_processing_thread != null && m_processing_thread.IsAlive;
         }
 
 
-        private List<string> getFiles()
+        //--------------------------------------------------------------------------------------------
+        private List<string> getNextDuplicatedGroupOfFiles()
         {
-            List<string> res = null;
-
             lock (m_mutex)
             {
                 if (m_duplicated_gorups.Count > 0)
                 {
-                    res = m_duplicated_gorups[m_duplicated_gorups.Count - 1];
-                    m_duplicated_gorups.RemoveAt(m_duplicated_gorups.Count - 1);
+                    var count = m_duplicated_gorups.Count;
+                    var res = m_duplicated_gorups[count - 1];
+                    m_duplicated_gorups.RemoveAt(count - 1);
+                    return res;
                 }
             }
-            return res;
+            return null;
         }
 
         //--------------------------------------------------------------------------------------------
@@ -72,7 +74,7 @@ namespace DuplicatesFinder
             timer.Tick += delegate
             {
                 List<string> res = null;
-                while ((res = getFiles()) != null)
+                while ((res = getNextDuplicatedGroupOfFiles()) != null)
                 {
                     OnDuplocatedGroupFound(res);
                     if (m_thread_started == true)
