@@ -13,7 +13,9 @@ namespace DuplicatesFinder
     {
         public delegate void DuplicatedGroupFoundDelegate(List<string> group);
         public delegate void ProcessingFinishedDelegate();
+        public ProcessingFinishedDelegate OnProcessingFinished = null;
 
+        //--------------------------------------------------------------------------------------------
         public DuplicatesFinderEngine(DuplicatedGroupFoundDelegate i_delgate)
         {
             if (i_delgate == null)
@@ -21,8 +23,6 @@ namespace DuplicatesFinder
 
             OnDuplocatedGroupFound = i_delgate;
         }
-
-        public ProcessingFinishedDelegate OnProcessingFinished = null;
 
         //--------------------------------------------------------------------------------------------
         public void StartExecution(string i_directory)
@@ -115,7 +115,6 @@ namespace DuplicatesFinder
                     {
                         hash = md5_calculator.ComputeHash(stream);
                     }
-
                 }
 
                 var sb = new StringBuilder();
@@ -225,6 +224,5 @@ namespace DuplicatesFinder
         private SortedDictionary<long, List<string>> m_files_grouped_by_sizes = new SortedDictionary<long, List<string>>();
         private volatile bool m_thread_stop_flag = false;
         private string m_dir_for_processing;
-
     }
 }
