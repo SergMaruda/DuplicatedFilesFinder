@@ -15,8 +15,8 @@ namespace DuplicatesFinder
 {
     public partial class MainForm : Form
     {
-        DuplicatesFinderEngine duplicated_files_finder;
-        long totalLength = 0;
+        DuplicatesFinderEngine m_duplicated_files_finder;
+        long m_total_size_duplicated = 0;
 
 
         //--------------------------------------------------------------------------------------------
@@ -24,8 +24,14 @@ namespace DuplicatesFinder
         {
             InitializeComponent();
 
-            duplicated_files_finder = new DuplicatesFinderEngine(addDuplicatedGroup);
-            duplicated_files_finder.OnProcessingFinished = ProcessingFinished;
+            m_duplicated_files_finder = new DuplicatesFinderEngine(addDuplicatedGroup);
+            m_duplicated_files_finder.OnProcessingFinished = ProcessingFinished;
+        }
+
+        private static string ConvertToMbStr(long i_size_in_Kb)
+        {
+            var SizeInMBytes = ((double)i_size_in_Kb / 1024 / 1024);
+            return string.Format("{0:0.00}", SizeInMBytes);
         }
 
         //--------------------------------------------------------------------------------------------
@@ -34,16 +40,15 @@ namespace DuplicatesFinder
             long duplicatedSizeInBytes = -1;
 
             var finfo = new System.IO.FileInfo(duplicated_group[0]);
-            var duplicatedSizeInMBytes = ((double)finfo.Length / 1024 / 1024);
-            var size = string.Format("{0:0.00}", duplicatedSizeInMBytes);
+            var size = ConvertToMbStr(finfo.Length);
             var root = treeViewDuplicatedFiles.Nodes;
-            var num_nodes = root.Count;
-            var node = root.Add("Group " + num_nodes + 1 + ". File size: " + size + " MB");
+            var node_number = root.Count + 1;
+            var node = root.Add("Group " + node_number + ". File size: " + size + " MB");
 
             foreach (var a in duplicated_group)
             {
                 finfo = new FileInfo(a);
-                //node.;
+
                 node.Nodes.Add(a);
                 if (duplicatedSizeInBytes != -1)
                     duplicatedSizeInBytes += finfo.Length;
@@ -51,8 +56,8 @@ namespace DuplicatesFinder
                     duplicatedSizeInBytes = 0;
             }
             node.Expand();
-            totalLength += duplicatedSizeInBytes;
-            labelDuplicatedSize.Text = string.Format("{0:0.00}", ((double)totalLength / 1024 / 1024));
+            m_total_size_duplicated += duplicatedSizeInBytes;
+            labelDuplicatedSize.Text = ConvertToMbStr(m_total_size_duplicated);
         }
 
         //--------------------------------------------------------------------------------------------
@@ -70,28 +75,22 @@ namespace DuplicatesFinder
         //--------------------------------------------------------------------------------------------
         private void ButtonRunClicked(object sender, EventArgs e)
         {
-            DialogResult answer = DialogResult.None;
+            DialogResult answer = DialogResult.Yes;
 
-            if (duplicated_files_finder.IsRunning())
+            if (m_duplicated_files_finder.IsRunning())
                 answer = MessageBox.Show(this, "Terminate and start over?", "", MessageBoxButtons.YesNo);
 
-            if(answer == DialogResult.Yes)
-            {
-                duplicated_files_finder.TerminateExecution();
-            }
+            if(answer != DialogResult.Yes)
+                return;
 
-            if (!duplicated_files_finder.IsRunning())
-            {
-                if (!progressBar.Visible)
-                    progressBar.Show();
+            treeViewDuplicatedFiles.Nodes.Clear();
+            m_total_size_duplicated = 0;
 
-                treeViewDuplicatedFiles.Nodes.Clear();
-
-                totalLength = 0;
-                duplicated_files_finder.StartExecution(labelDirectory.Text);
-            }
+            m_duplicated_files_finder.StartExecution(labelDirectory.Text);
+            progressBar.Show();
         }
 
+        //--------------------------------------------------------------------------------------------
         private void ProcessingFinished()
         {
             progressBar.Hide();
@@ -100,8 +99,7 @@ namespace DuplicatesFinder
         //--------------------------------------------------------------------------------------------
         private void MainFormClosing(object sender, FormClosingEventArgs e)
         {
-            duplicated_files_finder.TerminateExecution();
+            m_duplicated_files_finder.TerminateExecution();
         }
-
     }
 }

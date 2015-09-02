@@ -17,7 +17,7 @@ namespace DuplicatesFinder
         public DuplicatesFinderEngine(DuplicatedGroupFoundDelegate i_delgate)
         {
             if (i_delgate == null)
-                throw new System.Exception("Delegate for duplicated gorup should be specified");
+                throw new System.Exception("Delegate for duplicated group should be specified");
 
             OnDuplocatedGroupFound = i_delgate;
         }
@@ -27,6 +27,9 @@ namespace DuplicatesFinder
         //--------------------------------------------------------------------------------------------
         public void StartExecution(string i_directory)
         {
+            if (IsRunning())
+                TerminateExecution();
+
             m_dir_for_processing = i_directory;
             m_processing_thread = new Thread(FindDuplicatedGroups);
             m_processing_thread.Start();
@@ -145,19 +148,19 @@ namespace DuplicatesFinder
                 m_files_grouped_by_sizes.Clear();
                 ScanDirectory(m_dir_for_processing);
 
-                foreach (var entry in m_files_grouped_by_sizes.Reverse())
+                foreach (var group_of_same_size in m_files_grouped_by_sizes.Reverse())
                 {
-                    if (entry.Value.Count > 1)
+                    if (group_of_same_size.Value.Count > 1)
                     {
-                        var res = FindDuplicated(entry.Value);
+                        var duplicated_files_groups = FindDuplicated(group_of_same_size.Value);
 
-                        foreach (var entry2 in res)
+                        foreach (var duplicated_group in duplicated_files_groups)
                         {
-                            if (entry2.Value.Count > 1)
+                            if (duplicated_group.Value.Count > 1)
                             {
                                 lock (m_mutex)
                                 {
-                                    m_duplicated_gorups.Add(entry2.Value);
+                                    m_duplicated_gorups.Add(duplicated_group.Value);
                                 }
                             }
                         }
