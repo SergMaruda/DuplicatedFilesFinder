@@ -142,10 +142,10 @@ namespace DuplicatesFinder
             try
             {
                 m_thread_stop_flag = false;
-                m_files__grouped_by_sizes.Clear();
+                m_files_grouped_by_sizes.Clear();
                 ScanDirectory(m_dir_for_processing);
 
-                foreach (var entry in m_files__grouped_by_sizes.Reverse())
+                foreach (var entry in m_files_grouped_by_sizes.Reverse())
                 {
                     if (entry.Value.Count > 1)
                     {
@@ -184,7 +184,7 @@ namespace DuplicatesFinder
                     var finfo = new FileInfo(f);
 
                     List<string> list = null;
-                    if (m_files__grouped_by_sizes.TryGetValue(finfo.Length, out list))
+                    if (m_files_grouped_by_sizes.TryGetValue(finfo.Length, out list))
                     {
                         list.Add(f);
                     }
@@ -192,7 +192,7 @@ namespace DuplicatesFinder
                     {
                         list = new List<string>();
                         list.Add(f);
-                        m_files__grouped_by_sizes.Add(finfo.Length, list);
+                        m_files_grouped_by_sizes.Add(finfo.Length, list);
                     }
                 }
 
@@ -212,9 +212,6 @@ namespace DuplicatesFinder
             catch (System.Exception)
             {
             }
-
-
-
         }
 
         //--------------------------------------------------------------------------------------------
@@ -222,7 +219,7 @@ namespace DuplicatesFinder
         private Object m_mutex = new Object();
         private Thread m_processing_thread = null;
         private List<List<string>> m_duplicated_gorups = new List<List<string>>();
-        private SortedDictionary<long, List<string>> m_files__grouped_by_sizes = new SortedDictionary<long, List<string>>();
+        private SortedDictionary<long, List<string>> m_files_grouped_by_sizes = new SortedDictionary<long, List<string>>();
         private volatile bool m_thread_stop_flag = false;
         private string m_dir_for_processing;
 
