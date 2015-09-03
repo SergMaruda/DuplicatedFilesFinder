@@ -11,9 +11,22 @@ namespace DuplicatesFinder
 {
     public class DuplicatesFinderEngine
     {
+        public enum ProgressType
+        {
+            Unknown,
+            Indeterminate,
+            Determinate
+        }
+
         public delegate void DuplicatedGroupFoundDelegate(List<string> group);
         public delegate void ProcessingFinishedDelegate();
+
+        public delegate void ProgressStartedDelegate(ProgressType progress_type);
+        public delegate void ProgressChangedDelegate(int progress); //0-100
+
+        public ProgressStartedDelegate OnProgressStarted = null;
         public ProcessingFinishedDelegate OnProcessingFinished = null;
+        public ProgressChangedDelegate OnProgressChanged = null;
 
         //--------------------------------------------------------------------------------------------
         public DuplicatesFinderEngine(DuplicatedGroupFoundDelegate i_delgate)
@@ -89,6 +102,15 @@ namespace DuplicatesFinder
                     if (OnProcessingFinished != null)
                         OnProcessingFinished();
                 }
+
+                if (OnProgressStarted != null && m_should_notify_progress_type_changed)
+                {
+                    OnProgressStarted(m_current_progress_type);
+                    m_should_notify_progress_type_changed = false;
+                }
+
+                if (OnProgressChanged != null && m_current_progress_type == ProgressType.Determinate)
+                    OnProgressChanged(m_progress);
             };
 
             timer.Start();
@@ -145,7 +167,13 @@ namespace DuplicatesFinder
             {
                 m_thread_stop_flag = false;
                 m_files_grouped_by_sizes.Clear();
+                SetProgress(ProgressType.Indeterminate);
                 ScanDirectory(m_dir_for_processing);
+
+                SetProgress(ProgressType.Determinate);
+
+                int counter = 0;
+                int number_of_groups = m_files_grouped_by_sizes.Count;
 
                 foreach (var group_of_same_size in m_files_grouped_by_sizes.Reverse())
                 {
@@ -164,12 +192,22 @@ namespace DuplicatesFinder
                             }
                         }
                     }
+                    ++counter;
+                    m_progress = (counter * 100 / number_of_groups) ;
+
                 }
             }
             finally
             {
                 m_thread_stop_flag = true;
             }
+        }
+
+        void SetProgress(ProgressType i_progress_type)
+        {
+            m_current_progress_type = i_progress_type;
+            if (m_current_progress_type != ProgressType.Unknown)
+                m_should_notify_progress_type_changed = true;
         }
 
         //--------------------------------------------------------------------------------------------
@@ -224,5 +262,8 @@ namespace DuplicatesFinder
         private SortedDictionary<long, List<string>> m_files_grouped_by_sizes = new SortedDictionary<long, List<string>>();
         private volatile bool m_thread_stop_flag = false;
         private string m_dir_for_processing;
+        private ProgressType m_current_progress_type = ProgressType.Unknown;
+        private int m_progress = 0; //0 - 100;
+        private bool m_should_notify_progress_type_changed = false;
     }
 }

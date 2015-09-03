@@ -26,6 +26,8 @@ namespace DuplicatesFinder
 
             m_duplicated_files_finder = new DuplicatesFinderEngine(addDuplicatedGroup);
             m_duplicated_files_finder.OnProcessingFinished = ProcessingFinished;
+            m_duplicated_files_finder.OnProgressStarted = ProgressStarted;
+            m_duplicated_files_finder.OnProgressChanged = ProgressChanged;
         }
 
         private static string ConvertToMbStr(long i_size_in_Kb)
@@ -88,6 +90,21 @@ namespace DuplicatesFinder
 
             m_duplicated_files_finder.StartExecution(labelDirectory.Text);
             progressBar.Show();
+        }
+
+        //--------------------------------------------------------------------------------------------
+        private void ProgressStarted(DuplicatesFinderEngine.ProgressType i_progress_type)
+        {
+            if (i_progress_type == DuplicatesFinderEngine.ProgressType.Indeterminate)
+                progressBar.Style = ProgressBarStyle.Marquee;
+            else if (i_progress_type == DuplicatesFinderEngine.ProgressType.Determinate)
+                progressBar.Style = ProgressBarStyle.Continuous;
+        }
+
+        //--------------------------------------------------------------------------------------------
+        private void ProgressChanged(int progress)
+        {
+            progressBar.Value = progress;
         }
 
         //--------------------------------------------------------------------------------------------
